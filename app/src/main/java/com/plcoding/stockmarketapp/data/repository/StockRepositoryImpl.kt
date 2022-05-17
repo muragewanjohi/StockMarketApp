@@ -8,6 +8,8 @@ import com.plcoding.stockmarketapp.domain.model.CompanyListing
 import com.plcoding.stockmarketapp.util.Resource
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flow
+import retrofit2.HttpException
+import java.io.IOException
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -30,6 +32,23 @@ class StockRepositoryImpl @Inject constructor(
             ))
 
             val isDbEmpty = localListings.isEmpty() && query.isBlank()
+            val shouldJustLoadFromCache = !isDbEmpty && !fetchFromRemote
+            if (shouldJustLoadFromCache){
+                emit(Resource.Loading(false))
+                return@flow
+            }
+
+            val remoteListings = try {
+                val response = api.getListings()
+                response.byteStream()
+
+            }catch (e: IOException){
+                e.printStackTrace()
+                emit(Resource.Error(e.message.toString()))
+            }catch (e: HttpException){
+                e.printStackTrace()
+                emit(Resource.Error(e.message.toString()))
+            }
         }
     }
 
